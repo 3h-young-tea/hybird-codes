@@ -1,190 +1,273 @@
-#include<bits/stdc++.h>
-using namespace std::string_literals;
-using lf=double;
-using ll=std::ptrdiff_t;
-using ull=std::size_t;
-using us=unsigned;
-template<typename ty>
-using ue5=std::unique_ptr<ty>;
-constexpr ll inf=0x3f3f3f3f3f3f3f3fl;
-constexpr ll ver=1l<<17;
-constexpr ll mod=0x3b800001l;
-auto nxt(void){ll x;std::cin>>x;return x;}
+#include <bits/stdc++.h>
+
+using std::complex_literals::operator""i;
+using std::string_literals::operator""s;
+
+using lf = double;
+using ll = std::ptrdiff_t;
+using ull = std::size_t;
+using us = unsigned;
+
+constexpr ll k_inf = 0x3f3f3f3f3f3f3f3fl;
+constexpr ll k_mod = 0x3b800001l;
+constexpr ll k_max_ver = 1l << 17;
+
+auto	nxt(void) {
+	ll x;
+	std::cin >> x;
+	return x;
+}
+
 /*
 prob link:	https://vjudge.net/problem/%E6%B4%9B%E8%B0%B7-P3384
 start think:	
 term think:	
-start code:	
-term code:	
+start code:	mar 12th 2026, 20:02
+term code:	mar 12th 2026, 20:37
+start dbg:	mar 12th 2026, 20:38
+solve 里的 a 数组没有初始化为 tree_siz 长度
+term dbg:	mar 12th 2026, 20:39
 */
-class	tree{
-	ue5<tree>ld,rd;
-	ll f,g,v,t;
-public:
-	tree(ll,ll,std::vector<ll>&);
+
+class	tree {
+	std::unique_ptr<tree> ld_, rd_;
+	ll f_, g_;
+	ll v_, t_;
+
 	void push_up(void);
 	void push_down(void);
-	void update(ll,ll,ll);
-	auto query(ll,ll,ll);
+
+public:
+	tree(ll, ll, std::vector<ll>&);
+	void update(ll, ll, ll);
+	auto query(ll, ll, ll) const;
 };
-tree::tree(ll p,ll q,std::vector<ll>&a){
-	f=p,g=q,t=0;
-	if(f==g){
-		v=a[f];
+
+void	tree::push_up(void) {
+	v_ = ld_->v_ + rd_->v_;
+}
+
+void	tree::push_down(void) {
+	if (t_ == 0)
 		return;
-	}	ld=std::make_unique<tree>(f,f+g>>1,a);
-	rd=std::make_unique<tree>((f+g>>1)+1,g,a);
+
+	ld_->t_ += t_;
+	ld_->v_ += t_ * (ld_->g_ - ld_->f_ + 1);
+
+	rd_->t_ += t_;
+	rd_->v_ += t_ * (rd_->g_ - rd_->f_ + 1);
+
+	t_ = 0;
+}
+
+tree::tree(ll p, ll q, std::vector<ll> &a)
+	: f_(p), g_(q), v_(0), t_(0) {
+	if (f_ == g_) {
+		v_ = a[f_];
+		return;
+	}
+
+	ld_ = std::make_unique<tree>(f_, f_ + g_ >> 1, a);
+	rd_ = std::make_unique<tree>((f_ + g_ >> 1) + 1, g_, a);
+
 	push_up();
 }
-void	tree::push_up(void){
-	v=ld->v+rd->v;
-}
-void	tree::push_down(void){
-	if(t==0)
+
+void	tree::update(ll p, ll q, ll k) {
+	if (p <= f_ && g_ <= q) {
+		t_ += k;
+		v_ += k * (g_ - f_ + 1);
 		return;
-	ld->t+=t;
-	rd->t+=t;
-	ld->v+=t*(ld->g-ld->f+1);
-	rd->v+=t*(rd->g-rd->f+1);
-	t=0;
-}
-void	tree::update(ll p,ll q,ll k){
-	if(p<=f&&g<=q){
-		t+=k;
-		v+=k*(g-f+1);
-		return;
-	}	push_down();
-	if(p<=ld->g)
-		ld->update(p,q,k);
-	if(rd->f<=q)
-		rd->update(p,q,k);
-	push_up();
-}
-auto	tree::query(ll p,ll q,ll yy){
-	if(p<=f&&g<=q)
-		return v+yy*(g-f+1);
+	}
+
 	push_down();
-	ll ct=0;
-	if(p<=ld->g)
-		ct+=ld->query(p,q,yy+t);
-	if(rd->f<=q)
-		ct+=rd->query(p,q,yy+t);
-	return ct;
+
+	if (p <= ld_->g_)
+		ld_->update(p, q, k);
+
+	if (rd_->f_ <= q)
+		rd_->update(p, q, k);
+
+	push_up();
 }
+
+auto	tree::query(ll p, ll q, ll yy) const {
+	ll xt = 0;
+
+	if (p <= f_ && g_ <= q) {
+		return xt = v_ + yy * (g_ - f_ + 1);
+	}
+
+	if (p <= ld_->g_)
+		xt += ld_->query(p, q, yy + t_);
+
+	if (rd_->f_ <= q)
+		xt += rd_->query(p, q, yy + t_);
+
+	return xt;
+}
+
 class	vtx{
 public:
-	std::vector<vtx*>to;
-	vtx *t,*u,*d;
-	ll dep,siz,dfn,val;
+	std::vector<vtx*> to_;
+	vtx *t_, *u_, *d_;
+	ll dep_, siz_;
+	ll dfn_;
+	ll val_;
+
 	void add_edge(vtx*);
 	void dfs1(vtx*);
 	void dfs2(vtx*);
-}	v[ver];
-void	vtx::add_edge(vtx *y){
-	to.emplace_back(y);
+};
+
+vtx v[k_max_ver];
+
+void	vtx::add_edge(vtx *y) {
+	to_.emplace_back(y);
 }
-void	vtx::dfs1(vtx *_){
-	if(u=_)
-		dep=u->dep+1;
-	else	u=(vtx*)'$';
-	siz=1,d=v;
-	for(vtx *y:to){
-		if(y->u)
+
+void	vtx::dfs1(vtx *_) {
+	if (u_ = _)
+		dep_ = u_->dep_ + 1;
+
+	d_ = v;
+	siz_ = 1;
+
+	for (vtx *y : to_) {
+		if (y->d_)
 			continue;
+
 		y->dfs1(this);
-		siz+=y->siz;
-		if(d->siz<y->siz)
-			d=y;
+		siz_ += y->siz_;
+
+		if (d_->siz_ < y->siz_ || d_->siz_ == y->siz_ && y < d_)
+			d_ = y;
 	}
 }
-ll dfc;
-vtx *rev[ver];
-void	vtx::dfs2(vtx *_){
-	t=_;
-	rev[dfn=++dfc]=this;
-	if(d==v)
+
+std::vector<vtx*> rev;
+
+void	vtx::dfs2(vtx *_) {
+	t_ = _;
+	dfn_ = rev.size();
+	rev.emplace_back(this);
+
+	if (d_ == v)
 		return;
-	d->dfs2(t);
-	for(vtx *y:to){
-		if(y->t)
+
+	d_->dfs2(t_);
+
+	for (vtx *y : to_) {
+		if (y->t_)
 			continue;
+
 		y->dfs2(y);
 	}
 }
-void	upd_way(ue5<tree>&rt,vtx *x,vtx *y,ll k){
-	while(x->t!=y->t){
-		if(x->t->dep<y->t->dep)
-			std::swap(x,y);
-		rt->update(x->t->dfn,x->dfn,k);
-		x=x->t->u;
-	}	if(y->dep<x->dep)
-		std::swap(x,y);
-	rt->update(x->dfn,y->dfn,k);
+
+void	upd_way(std::unique_ptr<tree> &rt, vtx *x, vtx *y, ll z) {
+	while (x->t_ != y->t_) {
+		if (x->t_->dep_ < y->t_->dep_)
+			std::swap(x, y);
+
+		rt->update(x->t_->dfn_, x->dfn_, z);
+		x = x->t_->u_;
+	}
+
+	if (y->dep_ < x->dep_)
+		std::swap(x, y);
+
+	rt->update(x->dfn_, y->dfn_, z);
 }
-auto	qry_way(ue5<tree>&rt,vtx *x,vtx *y){
-	ll jv=0;
-	while(x->t!=y->t){
-		if(x->t->dep<y->t->dep)
-			std::swap(x,y);
-		jv+=rt->query(x->t->dfn,x->dfn,0);
-		x=x->t->u;
-	}	if(y->dep<x->dep)
-		std::swap(x,y);
-	return jv+=rt->query(x->dfn,y->dfn,0);
+
+auto	qry_way(const std::unique_ptr<tree> &rt, vtx *x, vtx *y) {
+	ll yt = 0;
+
+	while (x->t_ != y->t_) {
+		if (x->t_->dep_ < y->t_->dep_)
+			std::swap(x, y);
+
+		yt += rt->query(x->t_->dfn_, x->dfn_, 0);
+		x = x->t_->u_;
+	}
+
+	if (y->dep_ < x->dep_)
+		std::swap(x, y);
+
+	return yt += rt->query(x->dfn_, y->dfn_, 0);
 }
-void	upd_sub(ue5<tree>&rt,vtx *x,ll k){
-	rt->update(x->dfn,x->dfn+x->siz-1,k);
+
+void	upd_sub(std::unique_ptr<tree> &rt, vtx *x, ll z) {
+	rt->update(x->dfn_, x->dfn_ + x->siz_ - 1, z);
 }
-auto	qry_sub(ue5<tree>&rt,vtx *x){
-	return rt->query(x->dfn,x->dfn+x->siz-1,0);
+
+auto	qry_sub(const std::unique_ptr<tree> &rt, vtx *x) {
+	return rt->query(x->dfn_, x->dfn_ + x->siz_ - 1, 0);
 }
-void	solve(void){
-	ll n=nxt(),q=nxt();
-	vtx *s=v+nxt();
-	ll p=nxt();
-	for(vtx *x=v+1;x<=v+n;x++)
-		x->val=nxt();
-	for(ll t=n-1;t;t--){
-		vtx *x=v+nxt();
-		vtx *y=v+nxt();
+
+void	solve(void) {
+	ll tree_siz = nxt(), queries = nxt();
+	vtx *s = v + nxt();
+	ll mod = nxt();
+
+	for (vtx *x = v + 1; x <= v + tree_siz; ++x)
+		x->val_ = nxt();
+
+	for (ll t = 1; t < tree_siz; ++t) {
+		vtx *x = v + nxt();
+		vtx *y = v + nxt();
 		x->add_edge(y);
 		y->add_edge(x);
-	}	s->dfs1(nullptr);
+	}
+
+	s->dfs1(nullptr);
 	s->dfs2(s);
-	std::vector<ll>a(n+1);
-	for(ll x=1;x<=n;x++)
-		a[x]=rev[x]->val;
-	auto rt=std::make_unique<tree>(1,n,a);
-	while(q--){
-		ll op=nxt();
-		if(op==1){
-			vtx *x=v+nxt();
-			vtx *y=v+nxt();
-			ll k=nxt();
-			upd_way(rt,x,y,k);
-		}else	if(op==2){
-			vtx *x=v+nxt();
-			vtx *y=v+nxt();
-			std::cout<<qry_way(rt,x,y)%p<<"\n"s;
-		}else	if(op==3){
-			vtx *x=v+nxt();
-			ll k=nxt();
-			upd_sub(rt,x,k);
-		}else	if(op==4){
-			vtx *x=v+nxt();
-			std::cout<<qry_sub(rt,x)%p<<"\n"s;
-		}else	std::cerr<<"~\n"s;
+
+	std::vector<ll>a(tree_siz);
+
+	for (ll x = 0; x < tree_siz; ++x)
+		a[x] = rev[x]->val_;
+
+	auto rt = std::make_unique<tree>(0, tree_siz - 1, a);
+
+	while (queries--) {
+		ll op = nxt();
+
+		if (op == 1) {
+			vtx *x = v + nxt();
+			vtx *y = v + nxt();
+			ll z = nxt();
+			upd_way(rt, x, y, z);
+		} else if (op == 2) {
+			vtx *x = v + nxt();
+			vtx *y = v + nxt();
+			std::cout << qry_way(rt, x, y) % mod << "\n"s;
+		} else if (op == 3) {
+			vtx *x = v + nxt();
+			ll z = nxt();
+			upd_sub(rt, x, z);
+		} else if (op == 4) {
+			vtx *x = v + nxt();
+			std::cout << qry_sub(rt, x) % mod << "\n"s;
+		} else
+			std::cerr << "i`ve aked wf!\n"s;
 	}
 }
-auto	main(void)->signed{
-//	std::freopen(".in","r",stdin);
-//	std::freopen(".out","w",stdout);
+
+auto	main(void)->signed {
+//	std::freopen(".in", "r", stdin);
+//	std::freopen(".out", "w", stdout);
 	std::ios::sync_with_stdio(0);
 	std::cin.tie(nullptr);
 	std::cout.tie(nullptr);
-	ll _=1;
-//	_=nxt();
-	while(_--)
+
+	ll _ = 1;
+
+//	_ = nxt();
+
+	while (_--)
 		solve();
+
+	std::cout.flush();
 	return 0;
 }
